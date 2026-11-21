@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Деньги">
+<meta name="theme-color" content="#f4f4f1" media="(prefers-color-scheme: light)" id="tc1">
+<meta name="theme-color" content="#0d0d0f" media="(prefers-color-scheme: dark)" id="tc2">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>Деньги</title>
+<style>
+/* VOICE: тихий, аккуратный, без лишнего — как хороший калькулятор
+   IDEA: калькулятор-чек: сумма крупно, под ней клавиши, категории как кнопки «готово»
+   PICTURE: экран ввода — крупная сумма, сетка категорий, мягкая клавиатура
+   COLOUR and TYPE: тёплый светлый фон и белые клавиши / почти чёрный фон и графитовые клавиши; цвет только у категорий; Onest
+   LAYOUT: одна колонка до 520px, экран ввода без прокрутки, нижние вкладки, шторки снизу */
+:root{color-scheme:light dark;--bg:light-dark(#f4f4f1,#0d0d0f);--surf:light-dark(#fff,#17171a);--key:light-dark(#fff,#1d1d21);--keyp:light-dark(#ebebe7,#2a2a2f);--ink:light-dark(#17171a,#f1f1f2);--mute:light-dark(#8c8c92,#85858d);--line:light-dark(#e6e6e2,#25252a);--inc:light-dark(#178a5c,#43cc8d);--neg:light-dark(#d9473f,#ff6b63)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+:root[data-mode=light]{color-scheme:light}:root[data-mode=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html{-webkit-text-size-adjust:100%}
+body{-webkit-user-select:none;user-select:none;overscroll-behavior-y:none}
+input,textarea{-webkit-user-select:text;user-select:text}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,"Segoe UI",Roboto,sans-serif;overflow-x:clip;font-variant-numeric:tabular-nums;-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.app{max-width:520px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 10px) 16px calc(84px + env(safe-area-inset-bottom))}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px}
+.top h1{font-size:28px;font-weight:700;letter-spacing:-.02em;margin:0;line-height:1.1}
+.ib{width:44px;height:44px;border-radius:22px;display:grid;place-items:center;color:var(--mute)}
+.ib svg{width:22px;height:22px}
+.sum{display:flex;gap:16px;font-size:13px;color:var(--mute);margin-top:2px;flex-wrap:wrap}
+.sum b{font-weight:600;color:var(--ink)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--keyp);border-radius:12px;padding:3px;gap:3px}
+.seg button{min-height:38px;border-radius:9px;font-weight:500;font-size:15px;color:var(--mute);padding:0 12px}
+.seg button.on{background:var(--surf);color:var(--ink);box-shadow:0 1px 2px rgb(0 0 0/.08)}
+.ctl{display:flex;gap:8px;margin-top:12px}.ctl .seg:first-child{flex:1}
+.amt{padding:14px 2px 6px}
+.amt .v{font-size:48px;font-weight:600;letter-spacing:-.03em;line-height:1.1;white-space:nowrap;overflow-x:auto;scrollbar-width:none;direction:ltr}
+.amt .v::-webkit-scrollbar{display:none}
+.amt .v.z{color:var(--mute)}
+.amt .r{font-size:15px;color:var(--mute);min-height:22px}
+.meta{display:flex;gap:8px;margin:4px 0 10px}
+.inp{width:100%;min-height:44px;border:0;background:var(--surf);border-radius:12px;padding:0 14px;font-size:16px;appearance:none;outline:none}
+.inp:focus{box-shadow:0 0 0 2px var(--ink)}
+textarea.inp{padding:12px 14px;min-height:120px;font-size:13px}
+.dchip{position:relative;flex:none;min-height:44px;padding:0 14px;border-radius:12px;background:var(--surf);display:flex;align-items:center;font-size:15px;white-space:nowrap}
+.dchip input{position:absolute;inset:0;opacity:0;width:100%;height:100%}
+.cats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.cat{min-height:50px;border-radius:12px;background:var(--surf);padding:6px 10px;display:flex;align-items:center;gap:8px;text-align:left;font-size:14px;line-height:1.2;transition:transform .12s}
+.cat i{flex:none;width:9px;height:9px;border-radius:50%}
+.cat:active{transform:scale(.97)}
+.cat.on{box-shadow:inset 0 0 0 2px var(--ink);font-weight:600}
+.cat.add{color:var(--mute);justify-content:center}
+.kp{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:10px}
+.kp button{height:52px;border-radius:12px;background:var(--key);font-size:22px;font-weight:500;display:grid;place-items:center}
+.kp button.op{background:var(--keyp);font-size:20px}
+.kp button:active{background:var(--keyp)}
+.kp svg{width:24px;height:24px}
+.h2{font-size:13px;color:var(--mute);margin:24px 0 8px;display:flex;justify-content:space-between}
+.card{background:var(--surf);border-radius:16px;padding:4px 16px}
+.row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);width:100%;text-align:left}
+.card>.row:last-child,.card>:last-child .row:last-child{border-bottom:0}
+.dot{flex:none;width:10px;height:10px;border-radius:50%}
+.rm{flex:1}.rm b{display:block;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rm small,.rr small{display:block;font-size:13px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rr{text-align:right;white-space:nowrap;font-weight:600}
+.inc{color:var(--inc)}.neg{color:var(--neg)}
+.big3{display:grid;gap:0}
+.big3 .row b{font-weight:400}
+.big3 .rr{font-size:20px}
+.bar{padding:12px 0;border-bottom:1px solid var(--line)}
+.bar:last-child{border-bottom:0}
+.bar .l{display:flex;justify-content:space-between;gap:10px;font-size:15px}
+.bar .l span:last-child{font-weight:600;white-space:nowrap}
+.meter{height:6px;background:var(--keyp);border-radius:3px;overflow:hidden;margin-top:8px}
+.meter i{display:block;height:100%;border-radius:3px}
+.mnav{display:flex;align-items:center;justify-content:space-between;margin:8px 0 14px}
+.mnav b{font-size:17px;font-weight:600}
+.mnav .ib{background:var(--surf);color:var(--ink)}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.tile{background:var(--surf);border-radius:16px;padding:14px 16px}
+.tile small{display:block;font-size:13px;color:var(--mute)}
+.tile b{display:block;font-size:22px;font-weight:600;letter-spacing:-.02em;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn{display:flex;align-items:center;justify-content:center;width:100%;min-height:50px;border-radius:14px;font-weight:600;font-size:16px;margin-top:10px;background:var(--surf)}
+.btn.pr{background:var(--ink);color:var(--bg)}
+.btn.dg{color:var(--neg)}
+.fl{display:block;font-size:13px;color:var(--mute);margin:14px 0 6px}
+.empty{padding:36px 8px;text-align:center;color:var(--mute);font-size:15px}
+.day{display:flex;justify-content:space-between;font-size:13px;color:var(--mute);margin:20px 4px 6px}
+.pal{display:flex;flex-wrap:wrap;gap:8px}
+.pal button{width:40px;height:40px;border-radius:50%}
+.pal button.on{box-shadow:0 0 0 3px var(--surf),0 0 0 5px var(--ink)}
+.sw{position:fixed;inset:0;z-index:50}
+.scrim{position:absolute;inset:0;background:rgb(0 0 0/.35);opacity:0;transition:opacity .2s}
+.sheet{position:absolute;left:0;right:0;bottom:0;max-width:520px;margin:0 auto;max-height:94dvh;overflow:auto;overscroll-behavior:contain;background:var(--bg);border-radius:22px 22px 0 0;padding:8px 16px calc(20px + env(safe-area-inset-bottom));transform:translateY(100%);transition:transform .26s cubic-bezier(.2,.8,.2,1)}
+.grab{width:36px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 8px}
+.sheet h3{font-size:20px;font-weight:700;margin:4px 0 12px;letter-spacing:-.01em}
+.sw.on .scrim{opacity:1}.sw.on .sheet{transform:none}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:4px 8px env(safe-area-inset-bottom)}
+nav .in{max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+nav button{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:56px;justify-content:center;font-size:13px;color:var(--mute)}
+nav svg{width:22px;height:22px}
+nav button.on{color:var(--ink);font-weight:600}
+.toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translate(-50%,12px);opacity:0;pointer-events:none;background:var(--ink);color:var(--bg);border-radius:14px;padding:10px 10px 10px 16px;display:flex;gap:10px;align-items:center;font-size:15px;z-index:60;transition:.2s;white-space:nowrap;max-width:calc(100vw - 32px)}
+.toast span{overflow:hidden;text-overflow:ellipsis}
+.toast.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.toast button{color:var(--bg);opacity:.7;font-weight:600;min-height:32px;padding:0 6px}
+.small{font-size:13px;color:var(--mute)}
+.mt{margin-top:12px}
+.cats.edit .cat{box-shadow:inset 0 0 0 1.5px var(--mute);background:transparent}
+.cats.edit .cat.done{box-shadow:none;background:var(--ink);color:var(--bg);font-weight:600}
+.cat.tool{color:var(--mute);justify-content:center}
+.ctl2{display:flex;gap:8px;margin-top:8px}.ctl2 .seg:first-child{flex:1}
+.tot{font-size:clamp(34px,11vw,52px);font-weight:700;letter-spacing:-.035em;line-height:1.05;margin:14px 0 2px;white-space:nowrap}
+.sub{font-size:15px;color:var(--mute)}
+.tile .pc{display:block;font-size:13px;color:var(--mute);font-weight:400;margin-top:2px}
+.splitbar{display:flex;height:8px;border-radius:4px;overflow:hidden;gap:2px;margin:14px 0 4px;background:var(--keyp)}
+.splitbar i{display:block;height:100%}
+.tag{display:inline-block;font-size:12px;line-height:1;padding:3px 6px;border-radius:6px;background:var(--keyp);color:var(--mute);margin-right:6px;vertical-align:1px}
+@media (prefers-reduced-motion:reduce){.sheet,.scrim,.toast,.cat{transition:none}}
+@media (max-height:700px){.kp button{height:46px}.amt .v{font-size:40px}.cat{min-height:44px}}
+</style>
+</head>
+<body>
+<div class="app"><main id="view"></main></div>
+<nav class="tabs" aria-label="Разделы"><div class="in">
+  <button data-act="go" data-id="bank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-6 9 6M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 21h18"/></svg>Банк</button>
+  <button data-act="go" data-id="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 13h0M12 13h0M16 13h0M8 17h0M12 17h0M16 17h0"/></svg>Запись</button>
+  <button data-act="go" data-id="hist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>История</button>
+  <button data-act="go" data-id="stats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 20V12M12 20V5M19 20v-6"/></svg>Итоги</button>
+</div></nav>
+<div class="sw" id="sw" hidden><div class="scrim" data-act="close"></div><div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><div id="sb"></div></div></div>
+<div class="toast" id="toast" role="status"><span></span><button hidden></button></div>
+<script>
+{
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const PAL=['#f0705f','#f3a43b','#e3c548','#5cc28a','#4db6c4','#5b8def','#9a7cf0','#e27cbf','#b58a66','#9aa0a6'];
+const MN=['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
+const MG=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+const GEAR='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
+const BACK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 5H9l-6 7 6 7h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1zM17 9l-6 6M11 9l6 6"/></svg>';
+
+const blankMeta=()=>({v:3,cats:[],assets:[],rate:80.5,rateAt:null,base:'RUB',debts:[]});
+function normMeta(m){
+  m=m||{};
+  const out=Object.assign(blankMeta(),m);
+  if(!(+out.rate>0))out.rate=m.rates&&m.rates.RUB?+(1/m.rates.RUB).toFixed(2):80.5;
+  if(!['RUB','USD'].includes(out.base))out.base='RUB';
+  for(const k of ['cats','debts','assets'])if(!Array.isArray(out[k]))out[k]=[];
+  out._wal=Array.isArray(m.wallets)?m.wallets.map(w=>({id:w.id,cur:w.cur})):(m._wal||[]);
+  delete out.wallets;delete out.rates;delete out.goals;delete out.lastW;delete out.hide;
+  return out;
+}
+function normTx(L,meta){
+  return (L||[]).filter(t=>t&&t.t!=='tr').map(t=>{
+    t={...t};
+    if(!t.cur){const w=(meta._wal||[]).find(x=>x.id===t.w);t.cur=w&&w.cur==='RUB'?'RUB':'USD';if(t.oc==='RUB'){t.cur='RUB';t.a=t.oa}t.rr=t.rr?+(1/t.rr).toFixed(4):meta.rate;delete t.w;delete t.u;delete t.oa;delete t.oc}
+    if(t.k!=='c'&&t.k!=='r')t.k=t.cur==='USD'?'c':'r';
+    return t;
+  });
+}
+function upgrade(){
+  if((S.meta.v||0)>=3)return false;
+  const used=new Set(Object.values(S.months).flat().map(t=>t.c));
+  S.meta.cats=S.meta.cats.filter(c=>!/^[ei]\d+$/.test(c.id)||used.has(c.id));
+  S.meta.v=3;return true;
+}
+
+let S={meta:blankMeta(),months:{}},hasData=false,col=null,loadTimer=0,migrating=false,syncMode='init';
+const ui={view:'bank',sym:'',st:'exp',limit:120,k:'all',edit:false};
+const writing={},dirty={};
+function cacheLoad(){try{const j=JSON.parse(localStorage.getItem('fin.v2')||localStorage.getItem('fin.v1')||'null');if(j&&j.meta){const meta=normMeta(j.meta);const months={};for(const k in j.months||{})months[k]=normTx(j.months[k],meta);S={meta,months};hasData=true;upgrade()}}catch(e){}}
+function cacheSave(){try{localStorage.setItem('fin.v2',JSON.stringify(S))}catch(e){}}
+async function put(key){
+  cacheSave();hasData=true;
+  return;
+  if(!col)return;
+  if(writing[key]){dirty[key]=true;return}
+  writing[key]=true;
+  try{do{dirty[key]=false;const body=key==='meta'?S.meta:{tx:S.months[key.slice(2)]||[]};await col.doc(key).set(JSON.parse(JSON.stringify(body)))}while(dirty[key])}
+  catch(e){toast('Не удалось сохранить в облако, запись осталась на устройстве');syncMode='local'}
+  finally{writing[key]=false}
+}
+function onSnap(snap){
+  if(migrating)return;
+  if(snap.metadata.fromCache&&snap.empty)return;
+  clearTimeout(loadTimer);
+  if(!snap.metadata.fromCache)syncMode='cloud';
+  if(snap.empty){
+    if(hasData&&!snap.metadata.fromCache){migrating=true;Promise.all(['meta',...Object.keys(S.months).map(k=>'m-'+k)].map(put)).finally(()=>{migrating=false})}
+    return render();
+  }
+  let meta=null;const raw={};
+  for(const d of snap.docs){const v=d.data();if(!v)continue;if(d.id==='meta')meta=v;else if(d.id.startsWith('m-'))raw[d.id.slice(2)]=v.tx}
+  if(meta)S.meta=normMeta(JSON.parse(JSON.stringify(meta)));
+  const m={};for(const k in raw)m[k]=normTx(raw[k],S.meta);
+  S.months=m;hasData=true;if(upgrade())put('meta');cacheSave();
+  if(ui.view==='add'){drawSum();const mc=$('#mcats');if(mc&&$('#sw').hidden)mc.innerHTML=catBtns(M.t,null,'savecat',true)}else render();
+}
+async function fetchRate(force){
+  if(!navigator.onLine)return;
+  const last=+LSget('fin.autoAt','0');if(!force&&Date.now()-last<3*3600e3&&+AUTO.usd>0)return;
+  const get=async(url,pick)=>{const c=new AbortController();const t=setTimeout(()=>c.abort(),8000);try{const r=await fetch(url,{signal:c.signal,cache:'no-store'});if(!r.ok)return null;return pick(await r.json())}catch(e){return null}finally{clearTimeout(t)}};
+  let v=await get('https://www.cbr-xml-daily.ru/daily_json.js',j=>j&&j.Valute&&j.Valute.USD?{usd:+j.Valute.USD.Value,date:String(j.Date).slice(0,10),src:'ЦБ'}:null);
+  if(!v)v=await get('https://open.er-api.com/v6/latest/USD',j=>j&&j.rates&&j.rates.RUB?{usd:+j.rates.RUB,date:new Date((j.time_last_update_unix||0)*1000).toISOString().slice(0,10),src:'рынок'}:null);
+  if(!v||!(v.usd>30&&v.usd<300))return;
+  LSset('fin.autoAt',String(Date.now()));
+  if(v.usd===+AUTO.usd&&v.date===AUTO.date)return;
+  AUTO=v;LSset('fin.auto',JSON.stringify(AUTO));
+  if(ui.view==='add'){drawSum();drawAmt('main')}else if($('#sw').hidden)render();
+}
+
+/* ---------- helpers ---------- */
+const pad=n=>String(n).padStart(2,'0');
+const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const today=()=>iso(new Date());
+const ymNow=()=>today().slice(0,7);
+const cap=s=>s[0].toUpperCase()+s.slice(1);
+const shiftYm=(ym,k)=>{let[y,m]=ym.split('-').map(Number);m+=k;while(m<1){m+=12;y--}while(m>12){m-=12;y++}return y+'-'+pad(m)};
+function dayLabel(d){const t=today();if(d===t)return 'Сегодня';const y=new Date();y.setDate(y.getDate()-1);if(d===iso(y))return 'Вчера';const dt=new Date(d+'T12:00');return dt.getDate()+' '+MG[dt.getMonth()]+(d.slice(0,4)!==t.slice(0,4)?' '+d.slice(0,4):'')}
+const shortDay=d=>d===today()?'Сегодня':dayLabel(d).replace(/ \d{4}$/,'');
+let AUTO=(()=>{try{return JSON.parse(localStorage.getItem('fin.auto')||'{}')||{}}catch(e){return {}}})();
+const R=()=>!S.meta.rateManual&&+AUTO.usd>0?+AUTO.usd:S.meta.rate;
+const base=()=>S.meta.base;
+const other=c=>c==='RUB'?'USD':'RUB';
+function conv(a,from,to,rr){if(from===to)return a;rr=rr||R();return from==='USD'?a*rr:a/rr}
+const toBase=(a,c,rr)=>conv(a,c,base(),rr);
+const txBase=t=>toBase(t.a,t.cur,t.rr);
+const NFc={};const NF=d=>NFc[d]||(NFc[d]=new Intl.NumberFormat('ru-RU',{maximumFractionDigits:d,minimumFractionDigits:0}));
+function money(v,c,o={}){v=+v||0;const sg=o.sign?(v<0?'−':'+'):(v<0?'−':'');const s=NF(Math.abs(v)>=1000?0:2).format(Math.abs(v));return c==='USD'?sg+'$'+s:sg+s+' ₽'}
+const bm=(v,o)=>money(v,base(),o);
+const allTx=()=>Object.values(S.months).flat();
+const catOf=id=>S.meta.cats.find(c=>c.id===id)||{id:'_',name:'Без категории',color:'#9aa0a6',type:'exp'};
+const sortTx=L=>L.sort((a,b)=>a.d<b.d?1:a.d>b.d?-1:(b.ts||0)-(a.ts||0));
+const KN={c:'Крипта',r:'Руб'};
+const pl=(n,a,b,c)=>{n=Math.abs(n)%100;const n1=n%10;return n>10&&n<20?c:n1>1&&n1<5?b:n1===1?a:c};
+function monthTotals(ym,k){const r={inc:0,exp:0,ex:{},in:{}};for(const t of S.months[ym]||[]){if(k&&k!=='all'&&t.k!==k)continue;const v=txBase(t);if(t.t==='exp'){r.exp+=v;r.ex[t.c]=(r.ex[t.c]||0)+v}else{r.inc+=v;r.in[t.c]=(r.in[t.c]||0)+v}}return r}
+function calc(s){
+  s=String(s).replace(/\s/g,'').replace(/,/g,'.').replace(/−/g,'-').replace(/[×xх]/g,'*').replace(/[÷:]/g,'/');
+  if(!s)return NaN;s=s.replace(/[+\-*/]+$/,'');
+  if(!s||!/^[\d.+\-*/]+$/.test(s))return NaN;
+  const terms=s.match(/[+\-]?[^+\-]+/g);if(!terms||terms.join('')!==s)return NaN;
+  let tot=0;
+  for(let x of terms){let sg=1;if(x[0]==='+'||x[0]==='-'){sg=x[0]==='-'?-1:1;x=x.slice(1)}const f=x.split(/([*/])/);let v=parseFloat(f[0]);if(isNaN(v))return NaN;for(let i=1;i<f.length;i+=2){const n=parseFloat(f[i+1]);if(isNaN(n))return NaN;v=f[i]==='*'?v*n:v/n}tot+=sg*v}
+  return isFinite(tot)?Math.round(tot*100)/100:NaN;
+}
+
+/* ---------- keypad ---------- */
+const EX={},KC={};
+function press(s,k){
+  s=s||'';const seg=s.split(/[+−]/).pop();
+  if(k==='b')return s.slice(0,-1);
+  if(k==='c')return '';
+  if(k==='+'||k==='−'){if(!s)return s;if(/[+−,]$/.test(s))s=s.slice(0,-1);return s+k}
+  if(k===','){if(seg.includes(','))return s;return s+(seg===''?'0,':',')}
+  if(s.length>28)return s;
+  if(k==='000'){if(seg===''||seg==='0'||seg.includes(','))return s;return s+'000'}
+  if(seg.includes(',')&&seg.split(',')[1].length>=2)return s;
+  if(seg==='0')return s.slice(0,-1)+k;
+  return s+k;
+}
+function fmtExpr(s){return s.split(/([+−])/).map(p=>{if(p==='+'||p==='−')return ' '+p+' ';const[i,d]=p.split(',');return (i?NF(0).format(+i):'')+(d!==undefined?','+d:'')}).join('')}
+function kpHTML(id){
+  const keys=[['1'],['2'],['3'],['b',BACK,'op'],['4'],['5'],['6'],['+','+','op'],['7'],['8'],['9'],['−','−','op'],['000'],['0'],[','],['c','C','op']];
+  return `<div class="kp" data-kp="${id}">${keys.map(([k,l,c])=>`<button class="${c||''}" data-act="k" data-k="${k}" aria-label="${k==='b'?'Стереть':k==='c'?'Очистить':k}">${l||k}</button>`).join('')}</div>`;
+}
+function amtHTML(id){return `<div class="amt"><div class="v" id="v-${id}"></div><div class="r" id="r-${id}"></div></div>`}
+function drawAmt(id){
+  const v=$('#v-'+id),r=$('#r-'+id);if(!v)return;
+  const s=EX[id]||'',c=KC[id],sym=c==='USD'?'$':'₽';
+  v.textContent=s?(c==='USD'?'$'+fmtExpr(s):fmtExpr(s)+' ₽'):(c==='USD'?'$0':'0 ₽');
+  v.classList.toggle('z',!s);v.scrollLeft=v.scrollWidth;
+  const n=calc(s);
+  const parts=[];
+  if(isFinite(n)&&/[+−]./.test(s))parts.push('= '+money(n,c));
+  if(isFinite(n)&&n)parts.push('≈ '+money(conv(n,c,other(c)),other(c)));
+  r.textContent=parts.join('   ');
+}
+
+/* ---------- toast & sheet ---------- */
+let tT=0;
+function toast(msg,action){const el=$('#toast'),b=el.querySelector('button');el.querySelector('span').textContent=msg;b.hidden=!action;if(action){b.textContent=action.label;b.onclick=()=>{action.fn();el.classList.remove('on')}}el.classList.add('on');clearTimeout(tT);tT=setTimeout(()=>el.classList.remove('on'),action?4500:2000)}
+function openSheet(html,mount){const w=$('#sw');$('#sb').innerHTML=html;$('.sheet').scrollTop=0;w.hidden=false;requestAnimationFrame(()=>requestAnimationFrame(()=>w.classList.add('on')));mount&&mount()}
+function closeSheet(){const w=$('#sw');w.classList.remove('on');setTimeout(()=>{if(!w.classList.contains('on'))w.hidden=true},260)}
+let onYes=null;
+function ask(title,text,yes,fn){onYes=fn;openSheet(`<h3>${esc(title)}</h3><p class="small" style="font-size:15px;margin:0">${esc(text)}</p><button class="btn pr mt" data-act="yes">${esc(yes)}</button><button class="btn" data-act="close">Отмена</button>`)}
+
+/* ---------- views ---------- */
+const LSget=(k,d)=>{try{return localStorage.getItem(k)||d}catch(e){return d}};
+const LSset=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+const M={t:'exp',cur:LSget('fin.cur','RUB'),k:LSget('fin.k','r'),d:null};
+function head(title){return `<div class="top"><h1>${title}</h1><button class="ib" data-act="settings" aria-label="Настройки">${GEAR}</button></div>`}
+const kSeg=(sel,act,all)=>`<div class="seg">${all?`<button class="${sel==='all'?'on':''}" data-act="${act}" data-id="all">Всё</button>`:''}<button class="${sel==='c'?'on':''}" data-act="${act}" data-id="c">Крипта</button><button class="${sel==='r'?'on':''}" data-act="${act}" data-id="r">Руб</button></div>`;
+function catBtns(type,sel,act,tools){
+  const L=S.meta.cats.filter(c=>c.type===type).map(c=>`<button class="cat ${sel===c.id?'on':''}" data-act="${ui.edit&&tools?'ecat':act}" data-id="${c.id}"><i style="background:${c.color}"></i>${esc(c.name)}</button>`).join('');
+  const add=`<button class="cat tool" data-act="ncat" data-id="${type}">+ Категория</button>`;
+  const ed=tools&&S.meta.cats.some(c=>c.type===type)?`<button class="cat tool ${ui.edit?'done':''}" data-act="cedit">${ui.edit?'Готово':'Править'}</button>`:'';
+  return L+add+ed;
+}
+
+/* bank */
+const assetSum=k=>S.meta.assets.filter(a=>!k||a.k===k).reduce((s,a)=>s+toBase(a.a,a.cur),0);
+function assetRow(a){return `<button class="row" data-act="easset" data-id="${a.id}"><span class="rm"><b>${esc(a.name)}</b><small>${a.upd?'обновлено '+dayLabel(a.upd).toLowerCase():''}</small></span><span class="rr">${money(a.a,a.cur)}${a.cur!==base()?`<small>${bm(toBase(a.a,a.cur))}</small>`:''}</span></button>`}
+function vBank(){
+  const A=S.meta.assets;
+  if(!A.length)return head('Банк')+`<p class="sub" style="margin:8px 0 16px">Впиши всё, что у тебя есть: биржи, карты, наличка, P2P, стейблы. Сумма в банке посчитается сама — в рублях и долларах вместе.</p><button class="btn pr" data-act="nasset" data-id="c">Добавить крипту</button><button class="btn" data-act="nasset" data-id="r">Добавить рубли</button>${debtsLine()}`;
+  const c=assetSum('c'),r=assetSum('r'),tot=c+r;
+  const di=S.meta.debts.filter(d=>d.dir==='in').reduce((s,d)=>s+toBase(d.a,d.cur),0),dout=S.meta.debts.filter(d=>d.dir==='out').reduce((s,d)=>s+toBase(d.a,d.cur),0);
+  const ob=base()==='RUB'?'USD':'RUB';
+  const pc=v=>tot>0?Math.round(v/tot*100)+'%':'';
+  const grp=k=>{const L=A.filter(a=>a.k===k);return `<div class="h2"><span>${KN[k]}</span><button data-act="nasset" data-id="${k}" style="color:var(--ink);font-weight:600">+ Добавить</button></div>${L.length?`<div class="card">${L.map(assetRow).join('')}</div>`:''}`};
+  return `${head('Банк')}
+  <button data-act="base" data-id="${ob}" style="display:block;text-align:left;width:100%"><div class="tot ${tot<0?'neg':''}">${bm(tot)}</div><div class="sub">≈ ${money(conv(tot,base(),ob),ob)}${di||dout?` · с долгами ${bm(tot+di-dout)}`:''}</div></button>
+  <div class="splitbar">${tot>0?`<i style="flex:${Math.max(c,0)};background:#5b8def"></i><i style="flex:${Math.max(r,0)};background:#5cc28a"></i>`:''}</div>
+  <div class="two mt"><div class="tile"><small><span style="color:#5b8def">●</span> Крипта</small><b>${bm(c)}</b><span class="pc">${pc(c)}</span></div><div class="tile"><small><span style="color:#5cc28a">●</span> Руб</small><b>${bm(r)}</b><span class="pc">${pc(r)}</span></div></div>
+  ${grp('c')}${grp('r')}
+  ${debtsLine()}`;
+}
+function debtsLine(){
+  const D=S.meta.debts,si=D.filter(d=>d.dir==='in').reduce((s,d)=>s+toBase(d.a,d.cur),0),so=D.filter(d=>d.dir==='out').reduce((s,d)=>s+toBase(d.a,d.cur),0);
+  return `<div class="card" style="margin-top:24px"><button class="row" data-act="debts"><span class="rm"><b>Долги</b><small>${D.length?`мне должны ${bm(si)} · я должен ${bm(so)}`:'Кому должен ты и кто тебе'}</small></span><span class="small">›</span></button></div>`;
+}
+
+/* add */
+function vAdd(){
+  KC.main=M.cur;if(!S.meta.cats.some(c=>c.type===M.t))ui.edit=false;
+  return `${head('Запись')}<div class="sum" id="sum"></div>
+  <div class="seg mt"><button class="${M.t==='exp'?'on':''}" data-act="mt" data-id="exp">Расход</button><button class="${M.t==='inc'?'on':''}" data-act="mt" data-id="inc">Доход</button></div>
+  <div class="ctl2" id="mk">${kSeg(M.k,'mk')}<div class="seg"><button class="${M.cur==='RUB'?'on':''}" data-act="mc" data-id="RUB">₽</button><button class="${M.cur==='USD'?'on':''}" data-act="mc" data-id="USD">$</button></div></div>
+  ${amtHTML('main')}
+  <div class="meta"><input class="inp" id="mn" placeholder="Заметка" autocomplete="off" enterkeyhint="done"><label class="dchip"><span id="mdl">${shortDay(M.d||today())}</span><input type="date" id="md" value="${M.d||today()}" max="${today()}" aria-label="Дата"></label></div>
+  <div class="cats ${ui.edit?'edit':''}" id="mcats">${catBtns(M.t,null,'savecat',true)}</div>
+  ${S.meta.cats.some(c=>c.type===M.t)?'':`<p class="small" style="margin:6px 2px 0">Добавь свои категории — потом просто набираешь сумму и жмёшь на категорию.</p>`}
+  ${ui.edit?`<p class="small" style="margin:6px 2px 0">Нажми на категорию, чтобы переименовать или удалить.</p>`:''}
+  ${kpHTML('main')}`;
+}
+function drawSum(){const el=$('#sum');if(!el)return;const mt=monthTotals(ymNow());el.innerHTML=`<span>${cap(MN[new Date().getMonth()])}: расходы <b>${bm(mt.exp)}</b></span><span>доходы <b>${bm(mt.inc)}</b></span>`}
+
+function txRow(t){
+  const c=catOf(t.c),s=t.t==='exp'?-1:1;
+  return `<button class="row" data-act="etx" data-id="${t.id}"><span class="dot" style="background:${c.color}"></span><span class="rm"><b>${esc(c.name)}</b><small>${ui.k==='all'?`<span class="tag">${KN[t.k]}</span>`:''}${esc(t.n||'')}</small></span><span class="rr ${t.t==='inc'?'inc':''}">${money(s*t.a,t.cur,{sign:true})}${t.cur!==base()?`<small>${bm(s*txBase(t),{sign:true})}</small>`:''}</span></button>`;
+}
+function vHist(){
+  const L=sortTx(allTx().filter(t=>ui.k==='all'||t.k===ui.k));
+  const top=head('История')+`<div class="mt">${kSeg(ui.k,'hk',true)}</div>`;
+  if(!L.length)return top+`<div class="empty">Пока пусто</div>`;
+  const show=L.slice(0,ui.limit),groups=[];
+  for(const t of show){if(!groups.length||groups[groups.length-1].d!==t.d)groups.push({d:t.d,items:[],sum:0});const g=groups[groups.length-1];g.items.push(t);g.sum+=(t.t==='exp'?-1:1)*txBase(t)}
+  return top+groups.map(g=>`<div class="day"><span>${dayLabel(g.d)}</span><span>${bm(g.sum,{sign:true})}</span></div><div class="card">${g.items.map(txRow).join('')}</div>`).join('')+(L.length>ui.limit?`<button class="btn" data-act="more">Показать ещё</button>`:'');
+}
+function vStats(){
+  const ym=ui.sym||ymNow(),mt=monthTotals(ym,ui.k),tp=ui.st;
+  const tot=tp==='exp'?mt.exp:mt.inc;
+  const by=Object.entries(tp==='exp'?mt.ex:mt.in).map(([id,v])=>({c:catOf(id),v})).sort((a,b)=>b.v-a.v);
+  const left=mt.inc-mt.exp,[y,m]=ym.split('-');
+  let split='';
+  if(ui.k==='all'&&(mt.inc||mt.exp)){const a=monthTotals(ym,'c'),b=monthTotals(ym,'r');split=`<div class="card mt">${[['Крипта',a],['Руб',b]].map(([n,x])=>`<div class="row"><span class="rm"><b>${n}</b><small>доходы ${bm(x.inc)} · расходы ${bm(x.exp)}</small></span><span class="rr ${x.inc-x.exp<0?'neg':''}">${bm(x.inc-x.exp,{sign:x.inc!==x.exp})}</span></div>`).join('')}</div>`}
+  return `${head('Итоги')}
+  <div class="mnav"><button class="ib" data-act="sm" data-id="-1" aria-label="Предыдущий месяц">‹</button><b>${cap(MN[m-1])} ${y}</b><button class="ib" data-act="sm" data-id="1" aria-label="Следующий месяц">›</button></div>
+  ${kSeg(ui.k,'hk',true)}
+  <div class="card big3 mt"><div class="row"><span class="rm"><b>Доходы</b></span><span class="rr inc">${bm(mt.inc)}</span></div><div class="row"><span class="rm"><b>Расходы</b></span><span class="rr">${bm(mt.exp)}</span></div><div class="row"><span class="rm"><b>Остаток</b></span><span class="rr ${left<0?'neg':''}">${bm(left,{sign:left!==0})}</span></div></div>
+  ${split}
+  <div class="seg mt"><button class="${tp==='exp'?'on':''}" data-act="st" data-id="exp">Расходы</button><button class="${tp==='inc'?'on':''}" data-act="st" data-id="inc">Доходы</button></div>
+  ${by.length?`<div class="card mt">${by.map(x=>`<div class="bar"><div class="l"><span>${esc(x.c.name)}</span><span>${bm(x.v)} <span class="small">${Math.round(x.v/tot*100)}%</span></span></div><div class="meter"><i style="width:${x.v/tot*100}%;background:${x.c.color}"></i></div></div>`).join('')}</div>`:`<div class="empty">За этот месяц записей нет</div>`}
+  <p class="small mt">Всё пересчитано в ${base()==='RUB'?'рубли':'доллары'} по курсу на день записи. Сейчас 1 $ = ${NF(2).format(R())} ₽.</p>`;
+}
+function debtRow(d){return `<button class="row" data-act="edebt" data-id="${d.id}"><span class="rm"><b>${esc(d.name)}</b>${d.n?`<small>${esc(d.n)}</small>`:''}</span><span class="rr ${d.dir==='in'?'inc':''}">${money(d.a,d.cur)}${d.cur!==base()?`<small>${bm(toBase(d.a,d.cur))}</small>`:''}</span></button>`}
+function debtsSheet(){
+  const D=S.meta.debts,inn=D.filter(d=>d.dir==='in'),out=D.filter(d=>d.dir==='out');
+  const si=inn.reduce((s,d)=>s+toBase(d.a,d.cur),0),so=out.reduce((s,d)=>s+toBase(d.a,d.cur),0);
+  openSheet(`<h3>Долги</h3>
+  <div class="two"><div class="tile"><small>Мне должны</small><b class="inc">${bm(si)}</b></div><div class="tile"><small>Я должен</small><b>${bm(so)}</b></div></div>
+  <button class="btn pr" data-act="ndebt">Добавить долг</button>
+  ${inn.length?`<div class="h2"><span>Мне должны</span></div><div class="card">${inn.map(debtRow).join('')}</div>`:''}
+  ${out.length?`<div class="h2"><span>Я должен</span></div><div class="card">${out.map(debtRow).join('')}</div>`:''}
+  ${D.length?'':'<div class="empty">Долгов нет</div>'}
+  <button class="btn" data-act="close">Готово</button>`);
+}
+
+/* ---------- render ---------- */
+function render(){
+  const v=ui.view;
+  $('#view').innerHTML=v==='bank'?vBank():v==='add'?vAdd():v==='hist'?vHist():vStats();
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.id===v));
+  if(v==='add'){
+    drawSum();drawAmt('main');
+    $('#md').onchange=e=>{const v=e.target.value;M.d=!v||v===today()?null:v;$('#mdl').textContent=shortDay(M.d||today())};
+  }
+}
+function go(v){ui.view=v;ui.edit=false;LSset('fin.view',v);render();window.scrollTo(0,0)}
+
+/* ---------- save from main ---------- */
+function saveMain(cid){
+  const v=calc(EX.main||'');
+  if(!(v>0)){toast('Сначала набери сумму');return}
+  const rec={id:uid(),t:M.t,k:M.k,a:v,cur:M.cur,c:cid,d:M.d||today(),n:($('#mn').value||'').trim(),ts:Date.now(),rr:R()};
+  upsertTx(rec);
+  EX.main='';$('#mn').value='';drawAmt('main');drawSum();
+  const c=catOf(cid);
+  toast(`${money((M.t==='exp'?-1:1)*v,M.cur,{sign:true})} · ${c.name} · ${KN[M.k]}`,{label:'Отменить',fn:()=>{delTx(rec,true)}});
+}
+function upsertTx(rec,old){
+  const keys=new Set();
+  if(old){const k=old.d.slice(0,7);S.months[k]=(S.months[k]||[]).filter(x=>x.id!==old.id);keys.add(k)}
+  const k=rec.d.slice(0,7);(S.months[k]=S.months[k]||[]).push(rec);keys.add(k);
+  keys.forEach(k=>put('m-'+k));
+}
+function delTx(t,quiet){const k=t.d.slice(0,7);S.months[k]=(S.months[k]||[]).filter(x=>x.id!==t.id);put('m-'+k);render();if(!quiet)toast('Удалено',{label:'Вернуть',fn:()=>{upsertTx(t);render()}})}
+
+/* ---------- edit sheets ---------- */
+let F=null,D=null,E=null;
+function txSheet(t,keep){
+  F={...t};if(!keep){EX.edit=String(t.a).replace('.',',');KC.edit=t.cur}
+  openSheet(`<h3>Запись</h3>
+  <div class="ctl" style="margin-top:0"><div class="seg" id="fT"><button data-act="ft" data-id="exp">Расход</button><button data-act="ft" data-id="inc">Доход</button></div><div class="seg" id="fC"><button data-act="fc" data-id="RUB">₽</button><button data-act="fc" data-id="USD">$</button></div></div>
+  <div class="mt" id="fK"></div>
+  ${amtHTML('edit')}${kpHTML('edit')}
+  <label class="fl">Категория</label><div class="cats" id="fCats"></div>
+  <div class="meta mt"><input class="inp" id="fN" placeholder="Заметка" value="${esc(t.n||'')}"><label class="dchip"><span id="fdl">${shortDay(t.d)}</span><input type="date" id="fD" value="${t.d}"></label></div>
+  <button class="btn pr" data-act="fsave">Сохранить</button><button class="btn dg" data-act="fdel">Удалить</button>`,()=>{fDraw();$('#fD').onchange=e=>{$('#fdl').textContent=shortDay(e.target.value||today())}});
+}
+function fDraw(){
+  document.querySelectorAll('#fT button').forEach(b=>b.classList.toggle('on',b.dataset.id===F.t));
+  document.querySelectorAll('#fC button').forEach(b=>b.classList.toggle('on',b.dataset.id===KC.edit));
+  $('#fK').innerHTML=kSeg(F.k,'fk');$('#fCats').innerHTML=catBtns(F.t,F.c,'fcat');drawAmt('edit');
+}
+function fSave(){
+  const v=calc(EX.edit||'');if(!(v>0))return toast('Введи сумму');
+  if(!S.meta.cats.find(c=>c.id===F.c&&c.type===F.t))return toast('Выбери категорию');
+  const o=allTx().find(x=>x.id===F.id);
+  const rec={...F,a:v,cur:KC.edit,d:$('#fD').value||F.d,n:$('#fN').value.trim()};
+  if(o&&(o.cur!==rec.cur))rec.rr=o.rr||R();
+  upsertTx(rec,o);closeSheet();render();toast('Сохранено');
+}
+function debtSheet(d){
+  D=d?{...d}:{id:null,dir:'in',name:'',cur:M.cur,n:''};
+  EX.debt=d?String(d.a).replace('.',','):'';KC.debt=D.cur;
+  openSheet(`<h3>${d?'Долг':'Новый долг'}</h3>
+  <div class="seg" id="dD"><button data-act="dd" data-id="in">Мне должны</button><button data-act="dd" data-id="out">Я должен</button></div>
+  <label class="fl">Кто</label><input class="inp" id="dN" value="${esc(D.name)}" placeholder="Имя" autocomplete="off">
+  <div class="ctl"><span style="flex:1"></span><div class="seg" id="dC"><button data-act="dc" data-id="RUB">₽</button><button data-act="dc" data-id="USD">$</button></div></div>
+  ${amtHTML('debt')}${kpHTML('debt')}
+  <label class="fl">Заметка</label><input class="inp" id="dNt" value="${esc(D.n||'')}" placeholder="За что, до какого числа">
+  <button class="btn pr mt" data-act="dsave">Сохранить</button>
+  ${d?'<button class="btn" data-act="dclose">Долг закрыт</button>':''}<button class="btn" data-act="debts">Назад</button>`,()=>{dDraw()});
+}
+function dDraw(){
+  document.querySelectorAll('#dD button').forEach(b=>b.classList.toggle('on',b.dataset.id===D.dir));
+  document.querySelectorAll('#dC button').forEach(b=>b.classList.toggle('on',b.dataset.id===KC.debt));
+  drawAmt('debt');
+}
+function dSave(){
+  const name=$('#dN').value.trim(),v=calc(EX.debt||'');
+  if(!name)return toast('Напиши, кто');if(!(v>0))return toast('Введи сумму');
+  const rec={id:D.id||uid(),dir:D.dir,name,a:v,cur:KC.debt,n:$('#dNt').value.trim(),d:D.d||today()};
+  const i=S.meta.debts.findIndex(x=>x.id===rec.id);if(i>=0)S.meta.debts[i]=rec;else S.meta.debts.unshift(rec);
+  put('meta');render();debtsSheet();toast('Сохранено');
+}
+function catSheet(c,type,back){
+  E=c?{...c,back}:{id:null,name:'',type,color:PAL[S.meta.cats.length%10],back};
+  openSheet(`<h3>${c?'Категория':'Новая категория'}</h3>
+  <input class="inp" id="eN" value="${esc(E.name)}" placeholder="Название" autocomplete="off">
+  <label class="fl">Тип</label><div class="seg" id="eT"><button class="${E.type==='exp'?'on':''}" data-act="et" data-id="exp">Расход</button><button class="${E.type==='inc'?'on':''}" data-act="et" data-id="inc">Доход</button></div>
+  <label class="fl">Цвет</label><div class="pal" id="eP">${PAL.map(x=>`<button style="background:${x}" class="${E.color===x?'on':''}" data-act="ep" data-id="${x}" aria-label="Цвет"></button>`).join('')}</div>
+  <button class="btn pr mt" data-act="csave">Сохранить</button>
+  ${c?'<button class="btn" data-act="cup">Поднять выше</button><button class="btn dg" data-act="cdel">Удалить</button>':''}`,()=>{if(!c)setTimeout(()=>$('#eN').focus(),280)});
+}
+function cSave(){
+  const name=$('#eN').value.trim();if(!name)return toast('Назови категорию');
+  if(E.id)Object.assign(S.meta.cats.find(c=>c.id===E.id),{name,type:E.type,color:E.color});
+  else{E.id=uid();S.meta.cats.push({id:E.id,name,type:E.type,color:E.color})}
+  put('meta');afterCat();
+}
+function afterCat(){if(E.back==='settings')return settingsSheet();if(E.back==='edit'){const c=S.meta.cats.find(x=>x.id===E.id);if(c&&c.type===F.t)F.c=c.id;return txSheet(F,true)}closeSheet();render()}
+let AS=null;
+function assetSheet(a,k){
+  AS=a?{...a}:{id:null,k:k||'c',name:'',cur:k==='r'?'RUB':'USD'};
+  EX.asset=a?String(a.a).replace('.',','):'';KC.asset=AS.cur;
+  openSheet(`<h3>${a?esc(a.name):'Новый актив'}</h3>
+  <div id="aK">${kSeg(AS.k,'ak')}</div>
+  <label class="fl">Название</label><input class="inp" id="aN" value="${esc(AS.name)}" placeholder="${AS.k==='c'?'Bybit, Trust Wallet, P2P…':'Тинькофф, наличка, Сбер…'}" autocomplete="off">
+  <div class="ctl"><span class="small" style="flex:1;align-self:center">${a?'Можно дописать: + 5000 или − 300':'Сколько там сейчас'}</span><div class="seg" id="aC"><button data-act="ac" data-id="RUB">₽</button><button data-act="ac" data-id="USD">$</button></div></div>
+  ${amtHTML('asset')}${kpHTML('asset')}
+  <button class="btn pr mt" data-act="asave">Сохранить</button>
+  ${a?'<button class="btn dg" data-act="adel">Удалить</button>':''}`,()=>{aDraw()});
+}
+function aDraw(){$('#aK').innerHTML=kSeg(AS.k,'ak');$('#aN').placeholder=AS.k==='c'?'Bybit, Trust Wallet, P2P…':'Тинькофф, наличка, Сбер…';document.querySelectorAll('#aC button').forEach(b=>b.classList.toggle('on',b.dataset.id===KC.asset));drawAmt('asset')}
+function aSave(){
+  const name=$('#aN').value.trim(),v=calc(EX.asset||'0');
+  if(!name)return toast('Назови актив');if(!isFinite(v))return toast('Проверь сумму');
+  const rec={id:AS.id||uid(),k:AS.k,name,a:v,cur:KC.asset,upd:today()};
+  const i=S.meta.assets.findIndex(x=>x.id===rec.id);if(i>=0)S.meta.assets[i]=rec;else S.meta.assets.push(rec);
+  put('meta');closeSheet();render();toast('Сохранено');
+}
+function settingsSheet(){
+  const mode=(()=>{try{return localStorage.getItem('fin.mode')||'auto'}catch(e){return 'auto'}})();
+  const cl=t=>S.meta.cats.filter(c=>c.type===t).map(c=>`<button class="row" data-act="ecat" data-id="${c.id}"><span class="dot" style="background:${c.color}"></span><span class="rm"><b>${esc(c.name)}</b></span><span class="small">›</span></button>`).join('');
+  openSheet(`<h3>Настройки</h3>
+  <label class="fl">Тема</label><div class="seg"><button class="${mode==='auto'?'on':''}" data-act="mode" data-id="auto">Авто</button><button class="${mode==='light'?'on':''}" data-act="mode" data-id="light">Светлая</button><button class="${mode==='dark'?'on':''}" data-act="mode" data-id="dark">Тёмная</button></div>
+  <label class="fl">Считать итоги в</label><div class="seg"><button class="${base()==='RUB'?'on':''}" data-act="base" data-id="RUB">Рублях</button><button class="${base()==='USD'?'on':''}" data-act="base" data-id="USD">Долларах</button></div>
+  <label class="fl">Курс доллара</label>
+  <div class="seg"><button class="${S.meta.rateManual?'':'on'}" data-act="rmode" data-id="auto">Авто · ЦБ</button><button class="${S.meta.rateManual?'on':''}" data-act="rmode" data-id="man">Вручную</button></div>
+  ${S.meta.rateManual||!(+AUTO.usd>0)?`${S.meta.rateManual?'':'<p class="small">Автокурс подтянется при первом подключении к интернету — пока работает этот.</p>'}<div class="meta" style="margin:8px 0 0"><input class="inp" id="sR" inputmode="decimal" value="${String(S.meta.rate).replace('.',',')}" aria-label="Рублей за доллар"><button class="dchip" data-act="srate" style="font-weight:600">Сохранить</button></div>`:`<p class="small" style="margin:8px 2px 0">1 $ = ${NF(2).format(AUTO.usd)} ₽ · ${AUTO.src==='рынок'?'рыночный курс':'официальный курс ЦБ'}${AUTO.date?' на '+dayLabel(AUTO.date).toLowerCase():''}. Обновляется сам, когда есть интернет.</p>`}
+  <div class="h2"><span>Категории расходов</span><button data-act="ncat" data-id="exp" style="color:var(--ink);font-weight:600">+ Добавить</button></div>${cl('exp')?`<div class="card">${cl('exp')}</div>`:'<p class="small" style="margin:0 2px">Пока нет</p>'}
+  <div class="h2"><span>Категории доходов</span><button data-act="ncat" data-id="inc" style="color:var(--ink);font-weight:600">+ Добавить</button></div>${cl('inc')?`<div class="card">${cl('inc')}</div>`:'<p class="small" style="margin:0 2px">Пока нет</p>'}
+  <div class="h2"><span>Данные хранятся только на этом телефоне</span></div>
+  <button class="btn" data-act="dl">Сохранить копию в Файлы</button>
+  <button class="btn" data-act="exp">Скопировать копию текстом</button>
+  <button class="btn" data-act="imp">Восстановить из копии</button>
+  <button class="btn dg" data-act="wipe">Удалить все данные</button>
+  <p class="small mt">Делай копию раз в пару недель: если удалить приложение с экрана, данные удалятся вместе с ним.</p>
+  <button class="btn" data-act="close">Готово</button>`);
+}
+function applyMode(){let m='auto';try{m=localStorage.getItem('fin.mode')||'auto'}catch(e){}if(m==='auto')delete document.documentElement.dataset.mode;else document.documentElement.dataset.mode=m;const t1=$('#tc1'),t2=$('#tc2');if(t1&&t2){if(m==='auto'){t1.content='#f4f4f1';t2.content='#0d0d0f'}else{t1.content=t2.content=m==='dark'?'#0d0d0f':'#f4f4f1'}}}
+
+/* ---------- data ---------- */
+async function copyText(txt,ok){try{await navigator.clipboard.writeText(txt);toast(ok)}catch(e){openSheet(`<h3>Скопируй вручную</h3><textarea class="inp" readonly id="cpT">${esc(txt)}</textarea><button class="btn" data-act="close">Готово</button>`,()=>{$('#cpT').select()})}}
+function replaceAll(next){
+  const old=Object.keys(S.months);const meta=normMeta(next.meta);const months={};for(const k in next.months||{})months[k]=normTx(next.months[k],meta);
+  S={meta,months};put('meta');Object.keys(months).forEach(k=>put('m-'+k));
+  if(col)old.filter(k=>!(k in months)).forEach(k=>col.doc('m-'+k).delete().catch(()=>{}));
+  cacheSave();render();
+}
+
+/* ---------- actions ---------- */
+const A={
+  go:(el,id)=>go(id),close:closeSheet,yes:()=>{const f=onYes;onYes=null;closeSheet();f&&f()},settings:settingsSheet,
+  k:el=>{const id=el.closest('[data-kp]').dataset.kp;EX[id]=press(EX[id],el.dataset.k);drawAmt(id)},
+  mt:(el,id)=>{const n=$('#mn')?.value;M.t=id;render();if(n)$('#mn').value=n},
+  mc:(el,id)=>{M.cur=KC.main=id;LSset('fin.cur',id);M.k=id==='USD'?'c':'r';LSset('fin.k',M.k);document.querySelectorAll('[data-act=mc]').forEach(b=>b.classList.toggle('on',b.dataset.id===id));document.querySelectorAll('[data-act=mk]').forEach(b=>b.classList.toggle('on',b.dataset.id===M.k));drawAmt('main')},
+  mk:(el,id)=>{M.k=id;LSset('fin.k',id);document.querySelectorAll('[data-act=mk]').forEach(b=>b.classList.toggle('on',b.dataset.id===id))},
+  hk:(el,id)=>{ui.k=id;render()},fk:(el,id)=>{F.k=id;fDraw()},
+  cedit:()=>{const n=$('#mn')?.value;ui.edit=!ui.edit;render();if(n)$('#mn').value=n},
+  nasset:(el,id)=>assetSheet(null,id),easset:(el,id)=>assetSheet(S.meta.assets.find(a=>a.id===id)),ak:(el,id)=>{AS.k=id;if(!AS.id&&!EX.asset)KC.asset=id==='c'?'USD':'RUB';aDraw()},ac:(el,id)=>{KC.asset=id;aDraw()},asave:aSave,
+  adel:()=>{const a=S.meta.assets.find(x=>x.id===AS.id);S.meta.assets=S.meta.assets.filter(x=>x.id!==AS.id);put('meta');closeSheet();render();toast('Удалено',{label:'Вернуть',fn:()=>{S.meta.assets.push(a);put('meta');render()}})},
+  debts:debtsSheet,
+  savecat:(el,id)=>saveMain(id),
+  etx:(el,id)=>{const t=allTx().find(x=>x.id===id);t&&txSheet(t)},
+  ft:(el,id)=>{F.t=id;if(catOf(F.c).type!==id)F.c=null;fDraw()},fc:(el,id)=>{KC.edit=id;fDraw()},fcat:(el,id)=>{F.c=id;fDraw()},
+  fsave:fSave,fdel:()=>{const t=allTx().find(x=>x.id===F.id);closeSheet();t&&delTx(t)},
+  more:()=>{ui.limit+=120;render()},
+  sm:(el,id)=>{ui.sym=shiftYm(ui.sym||ymNow(),+id);render()},st:(el,id)=>{ui.st=id;render()},
+  ndebt:()=>debtSheet(),edebt:(el,id)=>debtSheet(S.meta.debts.find(d=>d.id===id)),
+  dd:(el,id)=>{D.dir=id;dDraw()},dc:(el,id)=>{KC.debt=id;dDraw()},dsave:dSave,
+  dclose:()=>{const d=S.meta.debts.find(x=>x.id===D.id);S.meta.debts=S.meta.debts.filter(x=>x.id!==D.id);put('meta');render();debtsSheet();toast('Долг закрыт',{label:'Вернуть',fn:()=>{S.meta.debts.unshift(d);put('meta');render()}})},
+  ncat:(el,id)=>{let back=null;if($('#fCats')){back='edit';F.n=$('#fN').value;F.d=$('#fD').value||F.d}else if(el.closest('#sb'))back='settings';catSheet(null,id,back)},
+  ecat:(el,id)=>catSheet(S.meta.cats.find(c=>c.id===id),null,el.closest('#sb')?'settings':null),
+  et:(el,id)=>{E.type=id;document.querySelectorAll('#eT button').forEach(b=>b.classList.toggle('on',b.dataset.id===id))},
+  ep:(el,id)=>{E.color=id;document.querySelectorAll('#eP button').forEach(b=>b.classList.toggle('on',b.dataset.id===id))},
+  csave:cSave,
+  cup:()=>{const C=S.meta.cats,i=C.findIndex(c=>c.id===E.id);let j=i-1;while(j>=0&&C[j].type!==C[i].type)j--;if(j>=0){const [x]=C.splice(i,1);C.splice(j,0,x);put('meta')}afterCat()},
+  cdel:()=>{const id=E.id,n=allTx().filter(t=>t.c===id).length;const back=E.back;ask('Удалить категорию?',n?`${n} ${pl(n,'запись станет','записи станут','записей станут')} «Без категории» — суммы в итогах останутся.`:'Записей в ней нет.','Удалить',()=>{S.meta.cats=S.meta.cats.filter(c=>c.id!==id);put('meta');render();if(back==='settings')settingsSheet()})},
+  mode:(el,id)=>{try{localStorage.setItem('fin.mode',id)}catch(e){}applyMode();settingsSheet()},
+  base:(el,id)=>{const inS=!!el.closest('#sb');S.meta.base=id;put('meta');render();if(inS)settingsSheet()},
+  rmode:(el,id)=>{S.meta.rateManual=id==='man';if(S.meta.rateManual&&+AUTO.usd>0&&!S.meta.rateAt)S.meta.rate=+AUTO.usd;put('meta');render();settingsSheet()},
+  srate:()=>{const v=calc($('#sR').value);if(!(v>0))return toast('Проверь курс');S.meta.rate=v;S.meta.rateAt=today();put('meta');render();toast('Курс сохранён')},
+  exp:()=>copyText(JSON.stringify(S),'Копия в буфере — сохрани её в Заметки'),
+  dl:()=>{const blob=new Blob([JSON.stringify(S)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='dengi-'+today()+'.json';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000)},
+  imp:()=>openSheet(`<h3>Восстановить</h3><p class="small">Выбери файл копии или вставь её текст. Текущие данные заменятся.</p><label class="btn" style="cursor:pointer">Выбрать файл<input type="file" id="impF" accept=".json,application/json,text/plain" hidden></label><textarea class="inp mt" id="impT" placeholder="или вставь текст сюда"></textarea><button class="btn pr" data-act="impgo">Восстановить</button><button class="btn" data-act="close">Отмена</button>`,()=>{$('#impF').onchange=async e=>{const f=e.target.files[0];if(f)$('#impT').value=await f.text()}}),
+  impgo:()=>{let j;try{j=JSON.parse($('#impT').value)}catch(e){return toast('Это не резервная копия')}if(!j||!j.meta)return toast('В копии нет данных');closeSheet();replaceAll(j);toast('Восстановлено')},
+  wipe:()=>ask('Удалить всё?','Записи, категории и долги сотрутся на всех устройствах.','Удалить всё',()=>{replaceAll({meta:blankMeta(),months:{}});toast('Данные удалены')})
+};
+document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const f=A[el.dataset.act];if(f){e.preventDefault();f(el,el.dataset.id,e)}});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&!$('#sw').hidden)return closeSheet();
+  const tag=(e.target.tagName||'').toLowerCase();if(tag==='input'||tag==='textarea'||e.metaKey||e.ctrlKey)return;
+  const id=!$('#sw').hidden?($('#sb [data-kp]')?.dataset.kp):ui.view==='add'?'main':null;if(!id)return;
+  const map={'Backspace':'b','Delete':'c','+':'+','-':'−',',':',','.':','};
+  const k=/^\d$/.test(e.key)?e.key:map[e.key];if(!k)return;
+  e.preventDefault();EX[id]=press(EX[id],k);drawAmt(id);
+});
+
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&$('#sw').hidden&&ui.view!=='add')render();else if(!document.hidden&&ui.view==='add'){drawSum();const l=$('#mdl');if(l)l.textContent=shortDay(M.d||today())}});
+applyMode();cacheLoad();ui.view=['bank','add','hist','stats'].includes(LSget('fin.view','bank'))?LSget('fin.view','bank'):'bank';render();
+fetchRate();window.addEventListener('online',()=>fetchRate(true));document.addEventListener('visibilitychange',()=>{if(!document.hidden)fetchRate()});
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
