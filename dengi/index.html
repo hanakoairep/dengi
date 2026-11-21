@@ -615,6 +615,7 @@ function settingsSheet(){
   <button class="btn" data-act="imp">Восстановить из копии</button>
   <button class="btn dg" data-act="wipe">Удалить все данные</button>
   <p class="small mt">Делай копию раз в пару недель: если удалить приложение с экрана, данные удалятся вместе с ним.</p>
+  <p class="small" style="text-align:center">Версия 4</p>
   <button class="btn" data-act="close">Готово</button>`);
 }
 function applyMode(){let m='auto';try{m=localStorage.getItem('fin.mode')||'auto'}catch(e){}if(m==='auto')delete document.documentElement.dataset.mode;else document.documentElement.dataset.mode=m;const t1=$('#tc1'),t2=$('#tc2');if(t1&&t2){if(m==='auto'){t1.content='#f4f4f1';t2.content='#0d0d0f'}else{t1.content=t2.content=m==='dark'?'#0d0d0f':'#f4f4f1'}}}
@@ -689,7 +690,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&$('#sw').
 applyMode();cacheLoad();upgrade4();runRecurring();ui.view=['bank','add','hist','stats'].includes(LSget('fin.view','bank'))?LSget('fin.view','bank'):'bank';render();
 fetchRate();window.addEventListener('online',()=>fetchRate(true));document.addEventListener('visibilitychange',()=>{if(!document.hidden){fetchRate();if(runRecurring())render()}});
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
-if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){const had=!!navigator.serviceWorker.controller;let rl=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(had&&!rl){rl=true;location.reload()}});navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})}
 }
 </script>
 </body>
